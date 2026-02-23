@@ -1,0 +1,120 @@
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: system-ui, sans-serif;
+  background: #0f1117;
+  color: #e2e8f0;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+header {
+  width: 100%;
+  max-width: 720px;
+  padding: 2rem 1rem 1rem;
+  text-align: center;
+}
+
+header h1 { font-size: 2.2rem; color: #60a5fa; }
+header .tagline { color: #94a3b8; margin-top: 0.25rem; }
+
+main {
+  width: 100%;
+  max-width: 720px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* Drop zone */
+#drop-zone {
+  border: 2px dashed #334155;
+  border-radius: 12px;
+  padding: 3rem 2rem;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
+#drop-zone.drag-over {
+  border-color: #60a5fa;
+  background: #1e293b;
+}
+#drop-zone p { color: #94a3b8; }
+#drop-zone p:first-child { font-size: 1.1rem; color: #cbd5e1; margin-bottom: 0.4rem; }
+#drop-zone .hint { font-size: 0.8rem; margin-top: 0.8rem; color: #64748b; }
+
+.browse-link {
+  color: #60a5fa;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+#upload-btn {
+  display: block;
+  width: 100%;
+  padding: 0.75rem;
+  margin-top: 1rem;
+  border: none;
+  border-radius: 8px;
+  background: #2563eb;
+  color: #fff;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+#upload-btn:disabled { background: #1e3a5f; color: #475569; cursor: not-allowed; }
+#upload-btn:not(:disabled):hover { background: #1d4ed8; }
+
+/* Progress */
+#progress-section h2 { margin-bottom: 0.75rem; }
+
+#progress-bar-container {
+  background: #1e293b;
+  border-radius: 999px;
+  height: 12px;
+  overflow: hidden;
+  margin-bottom: 0.5rem;
+}
+#progress-bar {
+  height: 100%;
+  width: 0%;
+  background: #3b82f6;
+  border-radius: 999px;
+  transition: width 0.3s ease;
+}
+#progress-label { color: #94a3b8; font-size: 0.9rem; margin-bottom: 0.75rem; }
+
+#result-list { list-style: none; display: flex; flex-direction: column; gap: 0.3rem; }
+#result-list li { font-size: 0.85rem; padding: 0.3rem 0.5rem; border-radius: 6px; }
+#result-list li.ok { color: #86efac; background: #052e16; }
+#result-list li.err { color: #fca5a5; background: #2d0d0d; }
+
+/* Download */
+#download-section { text-align: center; display: flex; flex-direction: column; align-items: center; gap: 1rem; }
+#download-section h2 { color: #86efac; }
+
+.btn-download {
+  display: inline-block;
+  padding: 0.75rem 2rem;
+  background: #16a34a;
+  color: #fff;
+  border-radius: 8px;
+  text-decoration: none;
+  font-size: 1rem;
+  transition: background 0.2s;
+}
+.btn-download:hover { background: #15803d; }
+
+#reset-btn {
+  background: transparent;
+  border: 1px solid #334155;
+  color: #94a3b8;
+  padding: 0.5rem 1.5rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+#reset-btn:hover { border-color: #60a5fa; color: #60a5fa; }

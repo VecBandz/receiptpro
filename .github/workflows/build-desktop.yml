@@ -1,0 +1,89 @@
+name: Build Desktop
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            artifact_name: ReceiptPro-linux-x86_64
+          - os: windows-latest
+            artifact_name: ReceiptPro-windows-x86_64.exe
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # ---- Linux deps ----
+      - name: Install system deps (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y tesseract-ocr tesseract-ocr-eng poppler-utils
+
+      # ---- Windows deps ----
+      - name: Download Tesseract (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: scripts/download_tesseract_windows.ps1
+
+      - name: Download Poppler (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: scripts/download_poppler_windows.ps1
+
+      # ---- Python ----
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install Python dependencies
+        run: pip install -r requirements-desktop.txt
+
+      # ---- Build ----
+      - name: Build with PyInstaller
+        run: pyinstaller receiptpro.spec
+
+      # ---- Rename output ----
+      - name: Rename artifact (Linux)
+        if: runner.os == 'Linux'
+        run: mv dist/ReceiptPro dist/${{ matrix.artifact_name }}
+
+      - name: Rename artifact (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: Move-Item dist\ReceiptPro.exe dist\${{ matrix.artifact_name }}
+
+      # ---- Upload ----
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: dist/${{ matrix.artifact_name }}
+          retention-days: 7
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts/
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            artifacts/ReceiptPro-linux-x86_64/ReceiptPro-linux-x86_64
+            artifacts/ReceiptPro-windows-x86_64.exe/ReceiptPro-windows-x86_64.exe
+          generate_release_notes: true

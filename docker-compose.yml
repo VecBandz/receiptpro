@@ -1,0 +1,8 @@
+services:
+  receiptpro:
+    build: .
+    ports:
+      - "5000:5000"
+    restart: unless-stopped
+    environment:
+      - FLASK_ENV=production
