@@ -1,5 +1,13 @@
 import re
 
+COMPANY_SKIP = [
+    re.compile(r'receipt\s*(id|no|#)', re.I),
+    re.compile(r'\d{1,2}[/-]\d{1,2}[/-]\d{2,4}'),
+    re.compile(r'^\d+\s+\w+.*(ave|st|rd|blvd|dr|ln)', re.I),
+    re.compile(r'^(tel|phone|fax|www\.|\d{3}[-.\s]\d{3})', re.I),
+    re.compile(r'^\s*$'),
+]
+
 
 def parse_receipt(text):
     parsed = {
@@ -13,8 +21,10 @@ def parse_receipt(text):
     lower_text = text.lower()
     lines = text.splitlines()
 
-    if lines:
-        parsed["Company"] = lines[0].strip()
+    for line in lines[:6]:
+        if len(line.strip()) > 2 and not any(p.search(line) for p in COMPANY_SKIP):
+            parsed["Company"] = line.strip()
+            break
 
     date_match = re.search(r'(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})', text)
     if date_match:

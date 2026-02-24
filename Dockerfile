@@ -9,7 +9,14 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /app
 
 COPY requirements-web.txt .
+COPY requirements-core.txt .
+COPY requirements-ml.txt .
 RUN pip install --no-cache-dir -r requirements-web.txt
+
+RUN python3 -c "\
+from transformers import DonutProcessor, VisionEncoderDecoderModel; \
+DonutProcessor.from_pretrained('naver-clova-ix/donut-base-finetuned-cord-v2'); \
+VisionEncoderDecoderModel.from_pretrained('naver-clova-ix/donut-base-finetuned-cord-v2')"
 
 COPY core/ ./core/
 COPY web/ ./web/
