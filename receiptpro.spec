@@ -25,11 +25,6 @@ def collect_dir(src_dir, dest_prefix):
 ctk_dir = Path(customtkinter.__file__).parent
 ctk_datas = collect_dir(ctk_dir, "customtkinter")
 
-# ---- openpyxl templates ----
-import openpyxl
-openpyxl_dir = Path(openpyxl.__file__).parent / "templates"
-openpyxl_datas = [(str(openpyxl_dir), "openpyxl/templates")]
-
 # ---- Tesseract (Windows only) ----
 tesseract_datas = []
 tesseract_dir = os.environ.get("TESSERACT_DIR", "")
@@ -42,7 +37,7 @@ poppler_dir = os.environ.get("POPPLER_DIR", "")
 if poppler_dir and Path(poppler_dir).exists():
     poppler_datas = collect_dir(poppler_dir, "poppler")
 
-all_datas = ctk_datas + openpyxl_datas + tesseract_datas + poppler_datas
+all_datas = ctk_datas + tesseract_datas + poppler_datas
 
 a = Analysis(
     ["desktop/app.py"],
