@@ -82,17 +82,11 @@ class ReceiptProApp:
         self._set_progress(0)
 
         for i, fp in enumerate(filepaths):
-            self._log(f"Processing: {fp}\n")
             try:
                 parsed, extracted = parse_receipt_ml(fp)
-                if extracted.strip():
-                    self._log(" \u2713 Text extracted\n")
-                else:
-                    self._log(" \u26a0 No text extracted (blank)\n")
-                self._log(f" Parsed: {parsed}\n\n")
                 receipts_data.append((os.path.basename(fp), extracted, parsed))
             except Exception as e:
-                self._log(f" \u2717 Error: {e}\n\n")
+                self._log(f"\u2717 {os.path.basename(fp)}: {e}\n")
             self._set_progress((i + 1) / len(filepaths))
 
         excel_path = self._write_to_excel_gui(filepaths, receipts_data)
