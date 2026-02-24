@@ -7,8 +7,7 @@ import json
 
 from flask import Flask, request, jsonify, Response, send_file, render_template
 
-from core.ocr import extract_text_from_file
-from core.parser import parse_receipt
+from core.ml_parser import parse_receipt_ml, _load_model
 from core.exporter import write_to_excel_headless
 
 app = Flask(__name__)
@@ -50,6 +49,9 @@ def _periodic_cleanup():
 
 
 _schedule_cleanup()
+
+# Pre-load the ML model in a background thread so the first upload isn't slow
+threading.Thread(target=_load_model, daemon=True).start()
 
 
 @app.route("/")
@@ -109,8 +111,7 @@ def stream(session_id: str):
             yield f"data: {json.dumps({'type': 'progress', 'index': i, 'filename': filename})}\n\n"
 
             try:
-                extracted = extract_text_from_file(fp)
-                parsed = parse_receipt(extracted)
+                parsed, extracted = parse_receipt_ml(fp)
                 receipts_data.append((filename, extracted, parsed))
                 yield f"data: {json.dumps({'type': 'done', 'index': i, 'filename': filename, 'parsed': parsed})}\n\n"
             except Exception as e:

@@ -4,6 +4,17 @@ from PIL import Image, ImageOps, ImageFilter
 from pdf2image import convert_from_path
 
 
+def file_to_first_image(filepath):
+    """Return first page of a PDF or the image itself as an RGB PIL Image."""
+    ext = filepath.lower()
+    poppler_path = os.environ.get("POPPLER_PATH") or None
+    if ext.endswith(".pdf"):
+        pages = convert_from_path(filepath, poppler_path=poppler_path,
+                                  first_page=1, last_page=1)
+        return pages[0].convert("RGB")
+    return Image.open(filepath).convert("RGB")
+
+
 def extract_text_from_file(filepath):
     cmd = os.environ.get("TESSERACT_CMD")
     if cmd:

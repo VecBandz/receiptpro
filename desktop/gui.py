@@ -8,8 +8,7 @@ import customtkinter as ctk
 from tkinter import filedialog, messagebox
 from tkinter.scrolledtext import ScrolledText
 
-from core.ocr import extract_text_from_file
-from core.parser import parse_receipt
+from core.ml_parser import parse_receipt_ml
 from core.exporter import write_to_excel_headless
 
 
@@ -85,12 +84,11 @@ class ReceiptProApp:
         for i, fp in enumerate(filepaths):
             self._log(f"Processing: {fp}\n")
             try:
-                extracted = extract_text_from_file(fp)
+                parsed, extracted = parse_receipt_ml(fp)
                 if extracted.strip():
                     self._log(" \u2713 Text extracted\n")
                 else:
                     self._log(" \u26a0 No text extracted (blank)\n")
-                parsed = parse_receipt(extracted)
                 self._log(f" Parsed: {parsed}\n\n")
                 receipts_data.append((os.path.basename(fp), extracted, parsed))
             except Exception as e:
