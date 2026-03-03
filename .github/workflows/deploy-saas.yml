@@ -1,0 +1,152 @@
+name: Deploy SaaS to Vercel
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "web/**"
+      - "core/**"
+      - "requirements-web.txt"
+      - "requirements-core.txt"
+
+jobs:
+  build:
+    name: Build & lint check
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: requirements-core.txt
+
+      - name: Install dependencies
+        run: pip install -r requirements-core.txt
+
+      - name: Verify web app imports
+        run: python -c "import core.exporter, core.parser, core.ocr"
+
+      - name: Notify — build ready to deploy
+        if: success()
+        uses: dawidd6/action-send-mail@v9
+        with:
+          server_address: ${{ secrets.MAIL_SERVER }}
+          server_port: 465
+          secure: true
+          username: ${{ secrets.MAIL_USERNAME }}
+          password: ${{ secrets.MAIL_PASSWORD }}
+          subject: "[ReceiptPro] SaaS build ready to deploy to Vercel"
+          to: ${{ secrets.NOTIFY_EMAIL }}
+          from: ReceiptPro CI <${{ secrets.MAIL_USERNAME }}>
+          body: |
+            The ReceiptPro SaaS build completed successfully and is ready to deploy to Vercel.
+
+            Repository : ${{ github.repository }}
+            Branch     : ${{ github.ref_name }}
+            Commit     : ${{ github.sha }}
+            Triggered by: ${{ github.actor }}
+
+            View the run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+      - name: Notify — build failed
+        if: failure()
+        uses: dawidd6/action-send-mail@v9
+        with:
+          server_address: ${{ secrets.MAIL_SERVER }}
+          server_port: 465
+          secure: true
+          username: ${{ secrets.MAIL_USERNAME }}
+          password: ${{ secrets.MAIL_PASSWORD }}
+          subject: "[ReceiptPro] SaaS build FAILED"
+          to: ${{ secrets.NOTIFY_EMAIL }}
+          from: ReceiptPro CI <${{ secrets.MAIL_USERNAME }}>
+          body: |
+            The ReceiptPro SaaS build failed before reaching Vercel deployment.
+
+            Repository : ${{ github.repository }}
+            Branch     : ${{ github.ref_name }}
+            Commit     : ${{ github.sha }}
+            Triggered by: ${{ github.actor }}
+
+            View the run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+  deploy:
+    name: Deploy to Vercel
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Vercel CLI
+        run: npm install --global vercel@latest
+
+      - name: Deploy to Vercel
+        id: vercel
+        run: |
+          output=$(vercel deploy --prod --token=${{ secrets.VERCEL_TOKEN }} \
+            --scope=${{ secrets.VERCEL_ORG_ID }} \
+            --yes --json 2>&1)
+          url=$(echo "$output" | jq -r '.url // empty' | head -1)
+          if [ -z "$url" ]; then
+            echo "::error::Could not extract deployment URL from Vercel output"
+            exit 1
+          fi
+          echo "url=https://$url" >> "$GITHUB_OUTPUT"
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+      - name: Notify — deployment complete
+        if: success()
+        uses: dawidd6/action-send-mail@v9
+        with:
+          server_address: ${{ secrets.MAIL_SERVER }}
+          server_port: 465
+          secure: true
+          username: ${{ secrets.MAIL_USERNAME }}
+          password: ${{ secrets.MAIL_PASSWORD }}
+          subject: "[ReceiptPro] SaaS deployment to Vercel complete"
+          to: ${{ secrets.NOTIFY_EMAIL }}
+          from: ReceiptPro CI <${{ secrets.MAIL_USERNAME }}>
+          body: |
+            The ReceiptPro SaaS app has been successfully deployed to Vercel.
+
+            Deployment URL: ${{ steps.vercel.outputs.url }}
+
+            Repository : ${{ github.repository }}
+            Branch     : ${{ github.ref_name }}
+            Commit     : ${{ github.sha }}
+            Triggered by: ${{ github.actor }}
+
+            View the run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+      - name: Notify — deployment failed
+        if: failure()
+        uses: dawidd6/action-send-mail@v9
+        with:
+          server_address: ${{ secrets.MAIL_SERVER }}
+          server_port: 465
+          secure: true
+          username: ${{ secrets.MAIL_USERNAME }}
+          password: ${{ secrets.MAIL_PASSWORD }}
+          subject: "[ReceiptPro] SaaS deployment to Vercel FAILED"
+          to: ${{ secrets.NOTIFY_EMAIL }}
+          from: ReceiptPro CI <${{ secrets.MAIL_USERNAME }}>
+          body: |
+            The ReceiptPro SaaS deployment to Vercel failed.
+
+            Repository : ${{ github.repository }}
+            Branch     : ${{ github.ref_name }}
+            Commit     : ${{ github.sha }}
+            Triggered by: ${{ github.actor }}
+
+            View the run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
