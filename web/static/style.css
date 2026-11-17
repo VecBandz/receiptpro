@@ -93,6 +93,9 @@ main {
 #result-list li.err { color: #fca5a5; background: #2d0d0d; }
 
 /* Download */
+/* Keep the hidden attribute working on sections that set their own display. */
+[hidden] { display: none !important; }
+
 #download-section { text-align: center; display: flex; flex-direction: column; align-items: center; gap: 1rem; }
 #download-section h2 { color: #86efac; }
 

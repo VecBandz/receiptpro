@@ -4,6 +4,20 @@ from openpyxl.styles import Font, Border, Side
 from openpyxl.utils import get_column_letter
 
 
+def _to_number(value):
+    """Turn '1,234.50' or '$12.50' into a float so Excel's SUM counts it.
+
+    Anything that isn't a plain amount is left as it was.
+    """
+    if isinstance(value, (int, float)):
+        return float(value)
+    cleaned = str(value or "").replace("$", "").replace(",", "").strip()
+    try:
+        return float(cleaned)
+    except ValueError:
+        return value
+
+
 def write_to_excel_headless(save_path: str, receipts_data: list):
     """Write receipts data to an Excel file at save_path.
 
@@ -38,8 +52,11 @@ def write_to_excel_headless(save_path: str, receipts_data: list):
     # Write rows
     for filename, text, parsed in receipts_data:
         row = [filename, parsed["Company"], parsed["Date"], parsed["Items"],
-               parsed["Amount"], parsed["Payment Method"], text]
+               _to_number(parsed["Amount"]), parsed["Payment Method"], text]
         ws.append(row)
+        amount_cell = ws.cell(row=ws.max_row, column=headers.index("Amount") + 1)
+        if isinstance(amount_cell.value, float):
+            amount_cell.number_format = "0.00"
 
         for col in range(1, len(headers) + 1):
             ws.cell(row=ws.max_row, column=col).border = thin_border
@@ -50,7 +67,8 @@ def write_to_excel_headless(save_path: str, receipts_data: list):
 
     ws.cell(row=total_row, column=1, value="TOTAL").font = bold_font
     ws.cell(row=total_row, column=amount_col,
-            value=f"=SUM({get_column_letter(amount_col)}2:{get_column_letter(amount_col)}{ws.max_row})").font = bold_font
+            value=f"=SUM({get_column_letter(amount_col)}2:{get_column_letter(amount_col)}{total_row - 1})").font = bold_font
+    ws.cell(row=total_row, column=amount_col).number_format = "0.00"
 
     # Auto-size columns
     for col in ws.columns:

@@ -9,6 +9,35 @@ COMPANY_SKIP = [
 ]
 
 
+AMOUNT_RE = re.compile(r'(\$?[\d,]+\.\d{2})')
+
+# Labels in order of preference. The final total wins over a subtotal, even
+# when the subtotal appears first on the receipt.
+AMOUNT_LABELS = [
+    re.compile(r'\bgrand\s+total\b', re.I),
+    re.compile(r'\b(amount|balance)\s+due\b', re.I),
+    re.compile(r'(?<!sub)(?<!sub\s)\btotal\b', re.I),
+    re.compile(r'\bsub\s?total\b', re.I),
+]
+
+
+def _find_amount(lines):
+    """Return the receipt's final amount as a string like '41.51'."""
+    for label in AMOUNT_LABELS:
+        candidate = ""
+        for line in lines:
+            if not label.search(line):
+                continue
+            if label is not AMOUNT_LABELS[3] and re.search(r'\bsub\s?total\b|\btax\b', line, re.I):
+                continue
+            match = AMOUNT_RE.search(line[label.search(line).end():])
+            if match:
+                candidate = match.group(1)  # keep the last match for this label
+        if candidate:
+            return candidate.replace("$", "").replace(",", "")
+    return ""
+
+
 def parse_receipt(text):
     parsed = {
         "Company": "",
@@ -30,10 +59,7 @@ def parse_receipt(text):
     if date_match:
         parsed["Date"] = date_match.group(1)
 
-    amount_match = re.search(r'(total|subtotal|amount due|grand total)\s*[:$]*\s*(\$?[\d,]+\.\d{2})',
-                             lower_text, re.IGNORECASE)
-    if amount_match:
-        parsed["Amount"] = amount_match.group(2)
+    parsed["Amount"] = _find_amount(lines)
 
     payment_keywords = ['visa', 'mastercard', 'amex', 'american express', 'discover',
                         'cash', 'check', 'debit', 'credit card', 'paypal']
